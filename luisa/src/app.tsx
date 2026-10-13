@@ -65,7 +65,7 @@ function carregarDados(): Dados {
       };
     }
   } catch {
-    // Usa os valores iniciais caso os dados estejam inválidos.
+    // Usa os dados iniciais se o armazenamento estiver inválido.
   }
 
   return {
@@ -123,7 +123,7 @@ export default function App() {
     try {
       localStorage.setItem(CHAVE, JSON.stringify(dados));
     } catch {
-      // O app continua aberto mesmo se o armazenamento estiver indisponível.
+      // O app continua funcionando se o armazenamento estiver indisponível.
     }
   }, [dados]);
 
@@ -164,7 +164,6 @@ export default function App() {
 
   function salvarConvidado(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const nome = nomeConvidado.trim();
     if (!nome) return;
 
@@ -204,18 +203,22 @@ export default function App() {
   }
 
   function excluirConvidado(id: string) {
-    if (!confirm("Deseja excluir este convidado?")) return;
-
     setDados((anterior) => ({
       ...anterior,
       convidados: anterior.convidados.filter((pessoa) => pessoa.id !== id),
     }));
+
+    if (editandoConvidado === id) {
+      setEditandoConvidado(null);
+      setNomeConvidado("");
+      setTipoConvidado("Adulto");
+    }
   }
 
   function criarLista(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const nome = listaNova.trim();
+
     if (!nome || dados.listas.includes(nome)) return;
 
     setDados((anterior) => ({
@@ -228,8 +231,6 @@ export default function App() {
   }
 
   function excluirLista(nome: string) {
-    if (!confirm(`Excluir a lista "${nome}"?`)) return;
-
     setDados((anterior) => ({
       ...anterior,
       listas: anterior.listas.filter((lista) => lista !== nome),
@@ -243,7 +244,6 @@ export default function App() {
 
   function criarAmbiente(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const nome = nomeAmbiente.trim();
     if (!nome) return;
 
@@ -259,8 +259,6 @@ export default function App() {
   }
 
   function excluirAmbiente(item: Ambiente) {
-    if (!confirm(`Excluir "${item.nome}" e todos os seus itens?`)) return;
-
     const restantes = dados.ambientes.filter((a) => a.id !== item.id);
 
     setDados((anterior) => ({
@@ -275,7 +273,6 @@ export default function App() {
 
   function salvarItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const nome = nomeItem.trim();
     if (!nome || !ambiente) return;
 
@@ -336,6 +333,12 @@ export default function App() {
           : a,
       ),
     }));
+
+    if (editandoItem === id) {
+      setEditandoItem(null);
+      setNomeItem("");
+      setMostrarFormItem(false);
+    }
   }
 
   function limparFormularioMeta() {
@@ -351,7 +354,6 @@ export default function App() {
 
     const titulo = tituloMeta.trim();
     const descricao = descricaoMeta.trim();
-
     if (!titulo) return;
 
     if (editandoMeta) {
@@ -405,12 +407,12 @@ export default function App() {
   }
 
   function excluirMeta(id: string) {
-    if (!confirm("Deseja excluir esta meta?")) return;
-
     setDados((anterior) => ({
       ...anterior,
       metas: anterior.metas.filter((meta) => meta.id !== id),
     }));
+
+    if (editandoMeta === id) limparFormularioMeta();
   }
 
   return (
@@ -897,11 +899,13 @@ export default function App() {
                   onClick={() => setFiltroMeta(filtro)}
                 >
                   {filtro}
-                  {filtro === "Todas" && (
-                    <span>{dados.metas.length}</span>
-                  )}
-                  {filtro === "Pendente" && <span>{metasPendentes}</span>}
-                  {filtro === "Concluída" && <span>{metasConcluidas}</span>}
+                  <span>
+                    {filtro === "Todas"
+                      ? dados.metas.length
+                      : filtro === "Pendente"
+                        ? metasPendentes
+                        : metasConcluidas}
+                  </span>
                 </button>
               ))}
             </div>
